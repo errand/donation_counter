@@ -1,0 +1,4 @@
+name = Donation Counter
+package = Custom
+description = Counts how much we've been donated
+core = 7.x

@@ -1,0 +1,57 @@
+<?php
+/**
+ * Implements hook_block_info().
+ */
+function donation_counter_block_info() {
+  $blocks = array();
+  
+  $blocks['donation_counter'] = array( // массив блоков модуля
+    'info' => t('Donation statistics'), // заголовок блока в админской панели
+    'cache' => DRUPAL_NO_CACHE,  // Кэшировать или не кэшировать... Подробнее https://api.drupal.org/api/drupal/includes!common.inc/group/block_caching/7
+  );
+   
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function donation_counter_block_view($name) {
+  
+  if ($name == 'donation_counter') {
+	
+	$type = "donation"; // Задаём тип данных
+	
+	$current_sum = db_query('SELECT SUM(field_amount_value) FROM {field_data_field_amount} amount LEFT JOIN {node} as node ON node.nid = amount.entity_id WHERE node.status = 1 AND node.type = :type', array(':type' => $type)) // Считаем сумму пожертвований
+        ->fetchField();
+	$donation_count= db_query('SELECT COUNT(type) FROM {node} node WHERE node.status = 1 AND node.type = :type', array(':type' => $type)) // Считаем количество донаторов
+        ->fetchField();
+	
+	$needed_sum = 100000;	 // Необходимая сумма
+
+	$sum_percent = number_format(($current_sum * 100)/$needed_sum, 0, "", ""); // Исчисляем процент от суммы
+	
+	$content = '<div class="block-statistics">
+		<div class="row">
+			<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+				<div class="block-progress">
+					<div class="progress" id="progress-bar">
+						<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="'.$sum_percent.'" class="progress-bar" role="progressbar" style="width: '.$sum_percent.'%; text-align: center;"><span class="sr-only">'.$sum_percent.'% Complete</span></div>
+					</div>
+					<div class="text-goals">
+						<p>Total raised: '.$sum_percent.'% (<i class="fa fa-eur">&nbsp;</i><span>'.$current_sum.'</span>) of '.$needed_sum.' Goal. Donated: <span>'.$donation_count.'</span> people (<a href="#donators_list" data-toggle="modal">see list</a>)</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>';
+
+	//
+	$block = array(
+      'subject' => t('Statistics'), //Заголовок блока
+      'content' => $content,
+    );
+    
+    return $block;
+  }
+  }
